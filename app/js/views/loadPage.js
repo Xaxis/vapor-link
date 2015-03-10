@@ -1,33 +1,38 @@
 define([
   'jquery',
   'underscore',
-  'backbone'
+  'backbone',
 ], function($, _, Backbone) {
   var LoadPageView = Backbone.View.extend({
     el: $('body'),
 
-    template: 'homepage',
+    src: 'homepage',
 
-    events: {
-      'click nav li': 'loadNextPage'
-    },
+    initialize: function( options ) {
 
-    initialize: function() {
+      // Add config options
+      this.options = options || {};
+
+      // Update target src
+      var src = this.options.uri ? this.options.uri : 'homepage';
+      this.src = src.replace(/\/.*/, '');
+
+      // Get onComplete callback
+      var complete = this.options.complete || false;
 
       // Adjust context
-      _.bindAll(this, 'render', 'loadNextPage');
+      _.bindAll(this, 'render');
+
+      // Render page
+      this.render( complete );
     },
 
-    render: function() {
+    render: function( complete ) {
       var
         _this         = this,
         loader        = $('#loader-overlay'),
-        container     = $('#site-content'),
         duration      = 300,
 
-        /*
-         * Method for toggling the content loader overlay
-         */
         toggleLoader  = function( callback ) {
           var state = loader.hasClass('active') ? 1 : 0;
 
@@ -51,26 +56,28 @@ define([
           );
         },
 
-        /*
-         * Method for loading the content of the next page
-         */
         getContent  = function() {
 
           // Animate in loader
           toggleLoader(function() {
 
             // Load/animate content
-            $.get("templates/" + _this.template + ".html", function(template) {
+            $.get("templates/" + _this.src + ".html", function(src) {
               $(_this.el).append('<div id="site-content"></div>');
               $('#site-content')
-                .html(template)
+                .html(src)
                 .stop()
                 .animate(
                 { opacity: 1 },
                 {
                   duration: duration,
                   complete: function() {
+
+                    // Toggle loading overlay
                     toggleLoader();
+
+                    // Trigger callback
+                    if (complete) complete();
                   }
                 }
               );
@@ -78,33 +85,8 @@ define([
           });
         };
 
-      // Animate previous site content out
-      if (container.length) {
-        $('#site-content')
-          .animate(
-          { opacity: 0 },
-          {
-            duration: duration,
-            complete: function() {
-              getContent();
-            }
-          }
-        );
-      }
-
-      // Animate site content in
-      else {
-        getContent();
-      }
-    },
-
-    loadNextPage: function(e) {
-      var target = $(e.currentTarget);
-      var target_uri = target.find('a').attr('href').replace('#', '');
-      $('nav li').removeClass('active');
-      target.addClass('active');
-      this.template = target_uri;
-      this.render();
+      // Animate in page load
+      getContent();
     }
   });
 
