@@ -12,7 +12,8 @@ define([
       chunks: [],
       chunk_count: 0,
       chunks_recv: 0,
-      elm: null
+      elm: null,
+      keep_alive: null
     }
   });
 });

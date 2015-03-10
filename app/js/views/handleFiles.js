@@ -82,48 +82,53 @@ define([
               channel_id: 'peerDownloadConnection',
               onDataChannelReady: function(c) {
                 var
-                  message       = JSON.parse(c.data),
-                  file_model    = _this.collection.get(message.cid),
-                  file_attrs    = file_model.attributes,
-                  file_ref      = file_attrs.file,
-                  chunk_size    = 1149,
-                  peer_id       = c.peer_id,
-                  peers         = file_model.get('peers');
+                  message       = JSON.parse(c.data);
 
-                // Register peer download object
-                if (!(peer_id in peers)) {
-                  peers[peer_id] = {
-                    status: {
-                      chunk_count: File.getChunkCount(file_ref, chunk_size),
-                      chunks_sent: 0
+                // Handle download requests (when not receiving a keep alive ping)
+                if (!('keep-alive' in message)) {
+                  var
+                    file_model    = _this.collection.get(message.cid),
+                    file_attrs    = file_model.attributes,
+                    file_ref      = file_attrs.file,
+                    chunk_size    = 1149,
+                    peer_id       = c.peer_id,
+                    peers         = file_model.get('peers');
+
+                  // Register peer download object
+                  if (!(peer_id in peers)) {
+                    peers[peer_id] = {
+                      status: {
+                        chunk_count: File.getChunkCount(file_ref, chunk_size),
+                        chunks_sent: 0
+                      }
+                    };
+                    file_model.set('peers', peers);
+                  }
+
+                  // Send chunks to peer
+                  File.forEachChunk( file_ref, chunk_size, function(index, chunk) {
+
+                    // Send meta info before first chunk
+                    if (!index) {
+                      c.channel.send(JSON.stringify({
+                        size: file_ref.size,
+                        type: file_ref.type,
+                        chunk_count: peers[peer_id].status.chunk_count
+                      }));
+
+                      // Send first chunk
+                      c.channel.send(chunk);
                     }
-                  };
-                  file_model.set('peers', peers);
+
+                    // Send remaining chunks
+                    else {
+                      c.channel.send(chunk);
+                    }
+
+                    // Increment chunks sent counter
+                    peers[peer_id].status.chunks_sent++;
+                  });
                 }
-
-                // Send chunks to peer
-                File.forEachChunk( file_ref, chunk_size, function(index, chunk) {
-
-                  // Send meta info before first chunk
-                  if (!index) {
-                    c.channel.send(JSON.stringify({
-                      size: file_ref.size,
-                      type: file_ref.type,
-                      chunk_count: peers[peer_id].status.chunk_count
-                    }));
-
-                    // Send first chunk
-                    c.channel.send(chunk);
-                  }
-
-                  // Send remaining chunks
-                  else {
-                    c.channel.send(chunk);
-                  }
-
-                  // Increment chunks sent counter
-                  peers[peer_id].status.chunks_sent++;
-                });
               }
             });
 

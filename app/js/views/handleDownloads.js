@@ -136,6 +136,22 @@ define([
             size: size
           });
 
+          // Handle chanel keep alive messaging
+          if (!last_model.get('keep_alive')) {
+            var kaInterval = setInterval(function() {
+
+              console.log('keep alive message sending...');
+
+              // Send keep alive message
+              c.channel.send(JSON.stringify({
+                'keep-alive': true
+              }));
+            }, 5000);
+
+            // Set the model's keep alive interval
+            last_model.set('keep_alive', kaInterval);
+          }
+
           // Handle download completion
           if (chunk_count == chunks_recv) {
             _this.handleDownloadCompletion({
@@ -156,8 +172,10 @@ define([
 
     updateDownloadProgress: function( options ) {
       var percentage = Math.ceil((options.chunks_recv / options.chunk_count) * 100);
-      options.elm.find('.progress-bar').css({width: percentage + '%'});
-      options.elm.find('.size').html(File.printFileSize(options.size));
+      if (options.elm) {
+        options.elm.find('.progress-bar').css({width: percentage + '%'});
+        options.elm.find('.size').html(File.printFileSize(options.size));
+      }
     },
 
     handleDownloadCompletion: function( options ) {
@@ -178,6 +196,9 @@ define([
       // Toggle cancel/download controls
       options.elm.find('.cancel').removeClass('active');
       options.elm.find('.download').addClass('active');
+
+      // Clear keep alive message
+      clearInterval(options.model.get('keep_alive'));
     },
 
     handleDownloadClick: function(e) {
