@@ -8,7 +8,8 @@ define([
   'text!../../templates/messageBox.html',
   'file',
   'p2ps',
-  'p2pc'
+  'p2pc',
+  'ui'
 ], function(
   $,
   _,
@@ -19,7 +20,8 @@ define([
   MessageBoxTpl,
   File,
   P2PS,
-  P2PC
+  P2PC,
+  UI
 ) {
   var HandleFilesView = Backbone.View.extend({
     el: $('body'),
@@ -38,9 +40,14 @@ define([
       'drop #drop-zone-indicator': 'fileDragHandler',
       'click #add-files': 'fileInputTrigger',
       'change #add-files-input': 'fileInputHandler',
+      'click #remove-files': 'removeSelectedFiles',
+      'mouseenter #remove-files': 'removeSelectedFilesWarning',
+      'mouseleave #remove-files': 'removeSelectedFilesWarning',
       'click .check-link': 'toggleCheckedFile',
       'mouseenter .share-link': 'moveClipCopy',
-      'mouseleave #global-zeroclipboard-html-bridge': 'removeClipCopy'
+      'mouseleave #global-zeroclipboard-html-bridge': 'removeClipCopy',
+      'click .message-section .controls .close': 'toggleSectionMessage',
+      'click .message-section .controls .open': 'toggleSectionMessage'
     },
 
     initialize: function() {
@@ -53,7 +60,10 @@ define([
         'fileDragHandler',
         'fileDrop',
         'toggleCheckedFile',
-        'copyToClipHandler'
+        'copyToClipHandler',
+        'removeSelectedFiles',
+        'removeSelectedFilesWarning',
+        'toggleSectionMessage'
       );
 
       // Initialize a new file object collection
@@ -86,48 +96,70 @@ define([
 
                 // Handle download requests (when not receiving a keep alive ping)
                 if (!('keep-alive' in message)) {
-                  var
-                    file_model    = _this.collection.get(message.cid),
-                    file_attrs    = file_model.attributes,
-                    file_ref      = file_attrs.file,
-                    chunk_size    = 1149,
-                    peer_id       = c.peer_id,
-                    peers         = file_model.get('peers');
 
-                  // Register peer download object
-                  if (!(peer_id in peers)) {
-                    peers[peer_id] = {
-                      status: {
-                        chunk_count: File.getChunkCount(file_ref, chunk_size),
-                        chunks_sent: 0
+                  // Proceed when file hasn't been removed
+                  if (_this.collection.get(message.cid)) {
+                    var
+                      file_model    = _this.collection.get(message.cid),
+                      file_attrs    = file_model.attributes,
+                      file_ref      = file_attrs.file,
+                      chunk_size    = 1149 * 99,
+                      peer_id       = c.peer_id,
+                      peers         = file_model.get('peers');
+
+                    // Register peer download tracking object (if doesn't exist)
+                    if (!(peer_id in peers)) {
+                      peers[peer_id] = {};
+                      file_model.set('peers', peers);
+                    }
+
+                    // Register the specific download tracking object in the peer object (if doesn't exist)
+                    if (!(message.cid in peers[peer_id])) {
+
+                      // Create download object
+                      peers[peer_id][message.cid] = {
+                        status: {
+                          chunk_count: File.getChunkCount(file_ref, chunk_size),
+                          chunks_sent: 0
+                        }
+                      };
+
+                      // Store object in model
+                      file_model.set('peers', peers);
+                    }
+
+                    // Send chunks to peer
+                    File.forEachChunk( file_ref, chunk_size, function(index, chunk) {
+
+                      // Send meta info before first chunk
+                      if (!index) {
+                        c.channel.send(JSON.stringify({
+                          message: 'meta',
+                          size: file_ref.size,
+                          type: file_ref.type,
+                          chunk_count: peers[peer_id][message.cid].status.chunk_count
+                        }));
+
+                        // Send first chunk
+                        c.channel.send(chunk);
                       }
-                    };
-                    file_model.set('peers', peers);
+
+                      // Send remaining chunks
+                      else {
+                        c.channel.send(chunk);
+                      }
+
+                      // Increment chunks sent counter
+                      peers[peer_id][message.cid].status.chunks_sent++;
+                    });
                   }
 
-                  // Send chunks to peer
-                  File.forEachChunk( file_ref, chunk_size, function(index, chunk) {
-
-                    // Send meta info before first chunk
-                    if (!index) {
-                      c.channel.send(JSON.stringify({
-                        size: file_ref.size,
-                        type: file_ref.type,
-                        chunk_count: peers[peer_id].status.chunk_count
-                      }));
-
-                      // Send first chunk
-                      c.channel.send(chunk);
-                    }
-
-                    // Send remaining chunks
-                    else {
-                      c.channel.send(chunk);
-                    }
-
-                    // Increment chunks sent counter
-                    peers[peer_id].status.chunks_sent++;
-                  });
+                  // Inform peer file is no longer available
+                  else {
+                    c.channel.send(JSON.stringify({
+                      message: 'no-file'
+                    }));
+                  }
                 }
               }
             });
@@ -137,18 +169,81 @@ define([
       }, 100);
     },
 
+    /*
+     * STORE - Hold references to P2P connection objects
+     */
     connections: {},
 
+    /*
+     * STORE - Hold reference to copy-to-clipboard element
+     */
     copy_target: null,
 
+    /*
+     * HANDLE - Hide/show remove files control
+     */
+    removeSelectedFilesWarning: function(e) {
+      var
+        target        = $(e.target),
+        message_box   = null;
+      if (!target.hasClass('frozen')) {
+        if (e.type == 'mouseenter') {
+          message_box = this.message_box({
+            id: 'remove-files-warning',
+            message: 'Removing files will break active downloads.',
+            classes: 'inline-box',
+            arrow_direction: 'right'
+          });
+          UI.positionMessageBox($(message_box), target, 'left', 0, 0);
+        } else if (e.type == 'mouseleave') {
+          $('#remove-files-warning').remove();
+        }
+      }
+    },
+
+    /*
+     * HANDLE - Click on Remove Files control
+     */
+    removeSelectedFiles: function(e) {
+      var
+        _this       = this,
+        target      = $(e.target);
+      if (!target.hasClass('frozen')) {
+        var
+          selected_files    = this.collection.where({selected: true});
+
+        // Remove warning message
+        $('#remove-files-warning').remove();
+
+        // Iterate over file models
+        _.each(selected_files, function(model) {
+
+          // Remove file element
+          $(model.attributes.elm).remove();
+
+          // Remove model from collection
+          _this.collection.remove(model);
+        });
+      }
+    },
+
+    /*
+     * HANDLE - Synthetically trigger click on hidden file input
+     */
     fileInputTrigger: function() {
       $('#add-files-input').click();
     },
 
+    /*
+     * HANDLE - Files added through system interface
+     */
     fileInputHandler: function(e) {
       this.fileDrop(e);
     },
 
+    /*
+     * HANDLE - Files dragged over drop zone
+     */
     fileDragHandler: function(e) {
       e.preventDefault();
 
@@ -174,6 +269,9 @@ define([
       }
     },
 
+    /*
+     * HANDLE - Files dropped in drop zone
+     */
     fileDrop: function(e) {
       var
         _this     = this;
@@ -204,14 +302,30 @@ define([
             encodeURIComponent(last_model.get('name'))
         });
 
-        // Populate/set element
+        // Populate/set element html
         last_model.set({ elm: _this.template(last_model.attributes) });
 
         // Render dropped file views
-        $('#drop-zone').append(last_model.get('elm'));
+        var elm = $(last_model.get('elm'));
+        $('#drop-zone').append(elm);
+
+        // Update model's element reference
+        last_model.set({ elm: $('[data-id="' + last_model.cid + '"]') });
+
+        // Glimmer effect
+        elm.addClass('shimmer');
+        setTimeout(function() {
+          elm.addClass('trigger');
+          setTimeout(function() {
+            elm.removeClass('shimmer trigger');
+          }, 1300);
+        }, 50);
       });
     },
 
+    /*
+     * Select/deselect files
+     */
     toggleCheckedFile: function(e) {
       e.stopPropagation();
       var
@@ -227,8 +341,19 @@ define([
       // Update view
       elm.toggleClass('selected');
       parent.toggleClass('selected');
+
+      // Enable/disable 'Remove Files' control
+      var selected_files = this.collection.where({selected: true});
+      if (selected_files.length) {
+        $('#remove-files').removeClass('frozen');
+      } else {
+        $('#remove-files').addClass('frozen');
+      }
     },
 
+    /*
+     * Copy data to clipboard and update message
+     */
     copyToClipHandler: function() {
       var _this = this;
 
@@ -251,6 +376,9 @@ define([
       });
     },
 
+    /*
+     * Move copy to clipboard element and show message
+     */
     moveClipCopy: function(e) {
       var
         target      = $(e.target),
@@ -267,9 +395,11 @@ define([
       // Add message box tpl
       var message_box = this.message_box({
         id: 'copy-message',
-        message: 'Copy link to clipboard'
+        message: 'Copy link to clipboard',
+        classes: 'inline-box',
+        arrow_direction: 'left'
       });
-      target.after(message_box);
+      UI.positionMessageBox($(message_box), target, 'right', 4, 0);
 
       // Set zeroclipboard over target
       clipCopy
@@ -280,6 +410,9 @@ define([
       this.copy_target = target;
     },
 
+    /*
+     * Remove copy to clipboard element and hide message
+     */
     removeClipCopy: function(e) {
       var
         target      = $('#global-zeroclipboard-html-bridge');
@@ -292,6 +425,24 @@ define([
 
       // Set zeroclipboard over target
       target.css({left: 0, top: -999});
+    },
+
+    /*
+     * Open/close a message section
+     */
+    toggleSectionMessage: function(e) {
+      var
+        target        = $(e.target),
+        section       = target.closest('section');
+      if (target.hasClass('close')) {
+        section.addClass('close-active');
+        section.animate({height: 0}, {duration: 300, complete: function() {
+          section.hide();
+        }});
+      } else if (target.hasClass('open')) {
+        section.show().removeClass('close-active');
+        section.animate({height: 'auto'}, {duration: 300});
+      }
     }
   });
 

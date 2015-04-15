@@ -19,7 +19,8 @@
       // Native dependencies
       file: 'libs/file',
       p2pc: 'libs/p2pc',
-      p2ps: 'libs/p2ps'
+      p2ps: 'libs/p2ps',
+      ui: 'libs/ui'
     }
   });
 

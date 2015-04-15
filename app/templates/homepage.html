@@ -1,25 +1,25 @@
 <!-- sections -->
-<!--<section>-->
-    <!--<h1 class="fa started">How To</h1>-->
-    <!--<div class="module-group n-mods-2">-->
-        <!--<div class="module">-->
-            <!--<h3>Load Files</h3>-->
-            <!--<p>-->
-                <!--Drag and drop any file(s) you want to share into the target box below to start sharing.-->
-            <!--</p>-->
-        <!--</div>-->
-        <!--<div class="module">-->
-            <!--<h3>Share Links</h3>-->
-            <!--<p>-->
-                <!--Copy a file's generated link and share it. The file will be available for download as long as your-->
-                <!--browser window remains open.-->
-            <!--</p>-->
-            <!--<p>-->
-                <!--<a href="#">» Learn More</a>-->
-            <!--</p>-->
-        <!--</div>-->
-    <!--</div>-->
-<!--</section>-->
+<section class="message-section">
+    <div class="section-wrapper">
+        <div class="controls">
+            <i class="fa fa-close close"></i>
+        </div>
+        <!--<h1 class="fa started">How To</h1>-->
+        <div class="module-group n-mods-1">
+            <div class="module">
+                <h3>P2P File Sharing</h3>
+                <p>
+                    Vlink allows you to <em>share files via a completely transparent peer-to-peer connection</em>. Drag and drop
+                    any file(s) you want to share into the target box below and then share the 'vlink'. The file will
+                    be available for download as long as your browser window is open.
+                </p>
+                <p>
+                    <a href="#">» Learn More</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
 <section id="target-zone">
     <h1 class="fa developers">Share Files</h1>
     <div class="module-group n-mods-1">
@@ -31,7 +31,8 @@
                 </div>
             </div>
             <div id="drop-controls">
-                <button id="add-files">Add Files</button>
+                <button id="add-files" class="shimmer button">Add</button>
+                <button id="remove-files" class="shimmer button frozen">Remove</button>
                 <input type="file" id="add-files-input" multiple="true">
             </div>
         </div>
