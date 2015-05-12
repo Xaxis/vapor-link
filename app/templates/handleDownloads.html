@@ -1,13 +1,38 @@
 <li data-cid="<%= cid %>">
-    <div class="download-col options">
-        <div class="option download-link">
-            <span class="cancel active"><a>&#xf00d;</a></span>
-            <span class="download"><a>&#xf019;</a></span>
+    <div class="download-wrapper">
+        <div class="download-col options">
+            <div class="option check-link info-button active" data-message="Toggle select file" data-position="right" data-arrow="left" data-size="inline"></div>
+            <div class="option cancel info-button active" data-message="Cancel download" data-position="right" data-arrow="left" data-size="inline"></div>
+            <div class="option refresh info-button" data-message="Restart download" data-position="right" data-arrow="left" data-size="inline"></div>
+            <div class="option download"><a class="info-button" data-message="Save download" data-position="right" data-arrow="left" data-size="inline"></a></div>
+        </div>
+        <div class="download-col name"><%= name %></div>
+        <div class="download-col size"><%= size %></div>
+        <div class="download-col options options-right">
+            <div class="option toggle active open info-button" data-message="Toggle download info" data-position="left" data-arrow="right" data-size="inline"></div>
         </div>
     </div>
-    <div class="download-col name"><%= name %></div>
-    <div class="download-col size"><%= size %></div>
     <div class="stats-container">
         <div class="progress-bar"></div>
+        <div class="stats-menu">
+            <table>
+                <tr class="progress">
+                    <td class="label">progress:</td>
+                    <td class="data">--</td>
+                </tr>
+                <tr class="status">
+                    <td class="label">status:</td>
+                    <td class="data"><%= status %></td>
+                </tr>
+                <tr class="source-id">
+                    <td class="label">source-id:</td>
+                    <td class="data"><%= source %></td>
+                </tr>
+                <tr class="vlink">
+                    <td class="label">vlink:</td>
+                    <td class="data"><%= vlink %></td>
+                </tr>
+            </table>
+        </div>
     </div>
 </li>

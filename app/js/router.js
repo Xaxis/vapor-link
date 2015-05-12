@@ -2,6 +2,7 @@ define([
   'jquery',
   'underscore',
   'backbone',
+  'views/global',
   'views/loadPage',
   'views/handleFiles',
   'views/handleDownloads'
@@ -9,6 +10,7 @@ define([
   $,
   _,
   Backbone,
+  Global,
   LoadPageView,
   HandleFilesView,
   HandleDownloadsView
@@ -20,6 +22,8 @@ define([
       'homepage/*path': 'loadPage',
       'download': 'loadPage',
       'download/:socket/:id/:name': 'loadPage',
+      'download/:socket/:id': 'loadPage',
+      'download/:socket/q/:cids': 'loadPage',
       '*actions': 'defaultAction'
     }
   });
@@ -34,18 +38,53 @@ define([
       var
         args      = _.toArray(arguments),
         route     = window.location.hash.replace('#', '').replace(/\/.*/, ''),
-        complete  = null;
+        complete  = null,
+        socket_id = null,
+        cid       = null,
+        name      = null;
+
+      // Download w/ name
+      if (args.length == 4 && args[1] != 'q') {
+        var cids = args[1].split(/c/);
+        cids.shift();
+        socket_id = args[0];
+        cid = cids;
+        name = args[2];
+      }
+
+      // Download w/o name
+      else if (args.length == 3 && args[1] != 'q') {
+        var cids = args[1].split(/c/);
+        cids.shift();
+        socket_id = args[0];
+        cid = cids;
+        name = args[2];
+      }
+
+      // Multi download link
+      else if (args.length == 4 && args[1] == 'q') {
+        var cids = args[2].split(/c/);
+        cids.shift();
+        socket_id = args[0];
+        cid = cids;
+      }
+
+      // Attach global view
+      new Global();
 
       // Build onComplete callback
       switch(true) {
 
-        case route == 'download' && args.length >= 3 :
+        // Handle download requests
+        case route == 'download' :
           complete = function() {
+
+            // Add download file to view
             HandleDownloadsView.addDownload({
               uri: route,
-              id: args[0],
-              cid: args[1],
-              name: args[2]
+              id: socket_id,
+              cid: cid,
+              name: name
             });
           };
           break;

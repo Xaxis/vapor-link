@@ -2,29 +2,11 @@
  * Primary app module
  */
 define([
-  'jquery',
-  'jquery.eye',
-  'underscore',
   'backbone',
   'router',
-  'socketio',
-  'p2ps'
-], function( $, Eye, _, Backbone, Router, io, P2PS ) {
+  'socketio'
+], function( Backbone, Router, io ) {
   var App = function() {
-
-    /*
-     * WATCH/HANDLE:
-     * - Adjust window padding when footer changes size
-     */
-    $('footer').eye({
-      load: true,
-      'height()': function () {
-        var footer = $('footer').outerHeight();
-        $('html').css('padding-bottom', footer);
-      }
-    }, 100);
-
-    // Expose module's methods
     return {
 
       /**

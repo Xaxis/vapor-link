@@ -36,9 +36,15 @@ define([
 
       // RTCOptions
       rtc_options: options.rtc_options || {
+
+        // @TODO - Why do the below configuration options break file transfer in chrome to chrome?
+        // @TODO - Do both of the options break file transfer in chrome or just one or the other?
+        //optional: [
+        //  {DtlsSrtpKeyAgreement: true},
+        //  {RtpDataChannels: true}
+        //]
         optional: [
-          {DtlsSrtpKeyAgreement: true},
-          {RtpDataChannels: true}
+          {DtlsSrtpKeyAgreement: true}
         ]
       },
 
@@ -284,7 +290,10 @@ define([
           pc            = options.pc || this.pc,
           handlers      = options.dc_handlers || {},
           dc_handlers   = _.extend(this.dc_handlers, handlers),
-          channel       = pc.createDataChannel(id, this.dc_config);
+
+          // @TODO - Determine why appending a random integer to the end of the channel ID allows data channel creation to work in chrome
+          random_int    = Math.floor(Math.random() * (10000 - 1)),
+          channel       = pc.createDataChannel(id + random_int, this.dc_config);
 
         // Attach data channel event handlers
         for (var handler in dc_handlers) {

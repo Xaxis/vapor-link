@@ -2,37 +2,39 @@
 <section class="message-section">
     <div class="section-wrapper">
         <div class="controls">
-            <i class="fa fa-close close"></i>
+            <i class="fa fa-close close info-button" data-message="Close" data-position="left" data-arrow="right" data-size="inline"></i>
         </div>
-        <!--<h1 class="fa started">How To</h1>-->
         <div class="module-group n-mods-1">
             <div class="module">
-                <h3>P2P File Sharing</h3>
+                <h3>P2P File Sharing via Vlink</h3>
                 <p>
-                    Vlink allows you to <em>share files via a completely transparent peer-to-peer connection</em>. Drag and drop
-                    any file(s) you want to share into the target box below and then share the 'vlink'. The file will
-                    be available for download as long as your browser window is open.
+                    Vlink allows you to <em>share files over a transparent peer-to-peer connection</em>. Add/or drag and drop the file(s) you want to share
+                    into the target box below and then share the
+                    <a class="info" data-message="A <em>vlink</em> or <em>vapor link</em> is a temporary link that acts as the gateway
+                     for forming peer-to-peer connections over the web." data-position="bottom" data-arrow="top">vlink</a>.
                 </p>
                 <p>
-                    <a href="#">» Learn More</a>
+                    The file will be available for download as long as your browser window is open.
                 </p>
             </div>
         </div>
     </div>
 </section>
+
 <section id="target-zone">
-    <h1 class="fa developers">Share Files</h1>
+    <h1 class="fa developers">Your Shared Files</h1>
     <div class="module-group n-mods-1">
         <div class="module">
-            <div id="drop-zone-container">
+            <div id="drop-zone-container" class="info-popup" data-message="Your Vlink: " data-position="inside-top" data-arrow="none" data-size="inline" data-margin-y="10">
                 <ul id="drop-zone"></ul>
                 <div id="drop-zone-indicator">
                     <span id="drop-notice"><i></i>Drop Files to Share</span>
                 </div>
             </div>
             <div id="drop-controls">
-                <button id="add-files" class="shimmer button">Add</button>
-                <button id="remove-files" class="shimmer button frozen">Remove</button>
+                <button id="add-files" class="shimmer button info-button" data-message="Select files to share." data-position="top" data-arrow="bottom">Add</button>
+                <button id="remove-files" class="shimmer button frozen info-button" data-message="Removing files will break any active downloads." data-position="top" data-arrow="bottom">Remove</button>
+                <button id="create-link" class="shimmer button frozen info-button" data-message="Generate the <em>vlink</em> you'll use to share your files with others." data-position="top" data-arrow="bottom">Create Vlink</button>
                 <input type="file" id="add-files-input" multiple="true">
             </div>
         </div>

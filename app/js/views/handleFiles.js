@@ -40,14 +40,11 @@ define([
       'drop #drop-zone-indicator': 'fileDragHandler',
       'click #add-files': 'fileInputTrigger',
       'change #add-files-input': 'fileInputHandler',
-      'click #remove-files': 'removeSelectedFiles',
-      'mouseenter #remove-files': 'removeSelectedFilesWarning',
-      'mouseleave #remove-files': 'removeSelectedFilesWarning',
-      'click .check-link': 'toggleCheckedFile',
+      'click #target-zone #remove-files': 'removeSelectedFiles',
+      'click #target-zone .check-link': 'toggleCheckedFile',
       'mouseenter .share-link': 'moveClipCopy',
       'mouseleave #global-zeroclipboard-html-bridge': 'removeClipCopy',
-      'click .message-section .controls .close': 'toggleSectionMessage',
-      'click .message-section .controls .open': 'toggleSectionMessage'
+      'click #create-link': 'createSelectedLink'
     },
 
     initialize: function() {
@@ -59,11 +56,10 @@ define([
         'fileInputHandler',
         'fileDragHandler',
         'fileDrop',
-        'toggleCheckedFile',
         'copyToClipHandler',
         'removeSelectedFiles',
-        'removeSelectedFilesWarning',
-        'toggleSectionMessage'
+        'createSelectedLink',
+        'toggleCheckedFile'
       );
 
       // Initialize a new file object collection
@@ -103,7 +99,7 @@ define([
                       file_model    = _this.collection.get(message.cid),
                       file_attrs    = file_model.attributes,
                       file_ref      = file_attrs.file,
-                      chunk_size    = 1149 * 99,
+                      chunk_size    = 1024,
                       peer_id       = c.peer_id,
                       peers         = file_model.get('peers');
 
@@ -137,6 +133,7 @@ define([
                           message: 'meta',
                           size: file_ref.size,
                           type: file_ref.type,
+                          name: file_ref.name,
                           chunk_count: peers[peer_id][message.cid].status.chunk_count
                         }));
 
@@ -180,24 +177,26 @@ define([
     copy_target: null,
 
     /*
-     * HANDLE - Hide/show remove files control
+     * HANDLE - Generate individual and compound vlink
      */
-    removeSelectedFilesWarning: function(e) {
+    createSelectedLink: function(e) {
       var
-        target        = $(e.target),
-        message_box   = null;
+        target      = $(e.target);
       if (!target.hasClass('frozen')) {
-        if (e.type == 'mouseenter') {
-          message_box = this.message_box({
-            id: 'remove-files-warning',
-            message: 'Removing files will break active downloads.',
-            classes: 'inline-box',
-            arrow_direction: 'right'
-          });
-          UI.positionMessageBox($(message_box), target, 'left', 0, 0);
-        } else if (e.type == 'mouseleave') {
-          $('#remove-files-warning').remove();
-        }
+        var
+          selected_files    = this.collection.where({selected: true}),
+          vlink             = window.location.href + '#download/' + window.vdrive.client_id + '/q/';
+
+        // Remove warning message
+        $('.message-box').remove();
+
+        // Iterate over selected file models
+        _.each(selected_files, function(model) {
+          vlink += model.get('cid');
+        });
+
+        // Show message
+        UI.openPopupMessageBox('#drop-zone-container', this.message_box, '<em>' + vlink + '</em>');
       }
     },
 
@@ -224,6 +223,9 @@ define([
           // Remove model from collection
           _this.collection.remove(model);
         });
+
+        // Re-freeze button styling
+        target.addClass('frozen');
       }
     },
 
@@ -293,7 +295,7 @@ define([
 
         // Update model
         last_model.set({
-          id: last_model.cid,
+          cid: last_model.cid,
           uri:
             window.location.href +
             '#download/' +
@@ -310,7 +312,7 @@ define([
         $('#drop-zone').append(elm);
 
         // Update model's element reference
-        last_model.set({ elm: $('[data-id="' + last_model.cid + '"]') });
+        last_model.set({ elm: $('[data-cid="' + last_model.cid + '"]') });
 
         // Glimmer effect
         elm.addClass('shimmer');
@@ -330,8 +332,8 @@ define([
       e.stopPropagation();
       var
         elm     = $(e.target),
-        parent  = elm.closest('[data-id]'),
-        id      = parent.attr('data-id'),
+        parent  = elm.closest('[data-cid]'),
+        id      = parent.attr('data-cid'),
         model   = this.collection.get(id),
         state   = model.get('selected') ? false : true;
 
@@ -345,9 +347,9 @@ define([
       // Enable/disable 'Remove Files' control
       var selected_files = this.collection.where({selected: true});
       if (selected_files.length) {
-        $('#remove-files').removeClass('frozen');
+        $('#remove-files, #create-link').removeClass('frozen');
       } else {
-        $('#remove-files').addClass('frozen');
+        $('#remove-files, #create-link').addClass('frozen');
       }
     },
 
@@ -396,7 +398,7 @@ define([
       var message_box = this.message_box({
         id: 'copy-message',
         message: 'Copy link to clipboard',
-        classes: 'inline-box',
+        classes: 'inline',
         arrow_direction: 'left'
       });
       UI.positionMessageBox($(message_box), target, 'right', 4, 0);
@@ -425,25 +427,8 @@ define([
 
       // Set zeroclipboard over target
       target.css({left: 0, top: -999});
-    },
-
-    /*
-     * Open/close a message section
-     */
-    toggleSectionMessage: function(e) {
-      var
-        target        = $(e.target),
-        section       = target.closest('section');
-      if (target.hasClass('close')) {
-        section.addClass('close-active');
-        section.animate({height: 0}, {duration: 300, complete: function() {
-          section.hide();
-        }});
-      } else if (target.hasClass('open')) {
-        section.show().removeClass('close-active');
-        section.animate({height: 'auto'}, {duration: 300});
-      }
     }
+
   });
 
   return HandleFilesView;

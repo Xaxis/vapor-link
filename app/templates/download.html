@@ -1,4 +1,25 @@
 <!-- sections -->
+<section class="message-section">
+    <div class="section-wrapper">
+        <div class="controls">
+            <i class="fa fa-close close info-button" data-message="Close" data-position="left" data-arrow="right" data-size="inline"></i>
+        </div>
+        <div class="module-group n-mods-1">
+            <div class="module">
+                <h3>Download a Vlink</h3>
+                <p>
+                    Simply paste a shared <a class="info" data-message="A <em>vlink</em> is the link that was shared with you to download a given file from a peer.">vlink</a>
+                    into the input box below and click 'Download'. A <em>peer-to-peer connection</em> is formed between
+                    you and the person who shared the Vlink and the file will begin to download.
+                </p>
+                <p>
+                    The vlink will remain downloadable as long as the person sharing it leaves their browser window
+                    open and is connected to the Internet.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
 <section id="downloads-zone">
     <h1 class="fa developers">Downloads</h1>
     <div class="module-group n-mods-1">
@@ -8,7 +29,7 @@
                     <input id="download-link-input" type="text" placeholder="paste download link here">
                 </div>
                 <div class="cell">
-                    <button id="download-link-button" class="frozen glimmer button">Download</button>
+                    <button id="download-link-button" class="frozen glimmer button info-button" data-message="Paste shared Vlink and click to start download." data-position="top" data-arrow="bottom" data-size="medium">Add Download</button>
                 </div>
             </div>
         </div>
@@ -17,6 +38,9 @@
         <div class="module">
             <div id="downloads-container">
                 <ul id="downloads"></ul>
+            </div>
+            <div id="download-controls">
+                <button id="remove-files" class="shimmer button frozen info-button" data-message="Removing downloads will erase all downloaded data associated with selected downloads." data-position="top" data-arrow="bottom">Remove</button>
             </div>
         </div>
     </div>
